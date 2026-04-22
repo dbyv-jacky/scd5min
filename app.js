@@ -263,11 +263,11 @@ function renderCard(card) {
   const mediaMarkup = createMediaMarkup(card);
   const metaMarkup = createCardMetaMarkup(card);
   const sourceLine = card.display.showSource ? `<p class="card-source">${escapeHtml(formatSourceLabel(card))}</p>` : "";
+  const excerptText = card.excerpt || card.text || card.title || "";
   const copyMarkup = card.display.showText
     ? `
         <div class="card-copy">
-          <h2>${escapeHtml(card.title)}</h2>
-          <p style="--line-clamp:${card.display.textPreviewLines}">${escapeHtml(card.excerpt)}</p>
+          <p style="--line-clamp:${card.display.textPreviewLines}">${escapeHtml(excerptText)}</p>
         </div>
       `
     : "";
@@ -400,7 +400,6 @@ function createMediaMarkup(card) {
 
   const label = card.title || card.authorName || card.platform;
   const fallbackSrc = createFallbackArtworkDataUri(label);
-  const pillMarkup = card.postType ? `<span class="media-pill">${escapeHtml(card.postType)}</span>` : "";
 
   if (card.media.kind === "video" && card.media.url && card.display.videoAutoplay) {
     const poster = escapeHtml(card.media.thumbnailUrl || card.media.remoteUrl || fallbackSrc);
@@ -410,7 +409,6 @@ function createMediaMarkup(card) {
         <video autoplay muted loop playsinline preload="metadata" poster="${poster}" data-remote-poster="${escapeHtml(card.media.remoteUrl || "")}" data-fallback-label="${escapeHtml(label)}">
           <source src="${escapeHtml(card.media.url)}" />
         </video>
-        ${pillMarkup}
       </div>
     `;
   }
@@ -426,7 +424,6 @@ function createMediaMarkup(card) {
         data-remote-src="${remoteSrc}"
         data-fallback-src="${escapeHtml(fallbackSrc)}"
       />
-      ${pillMarkup}
     </div>
   `;
 }
@@ -438,7 +435,6 @@ function createModalMediaMarkup(card) {
 
   const label = card.title || card.authorName || card.platform;
   const fallbackSrc = createFallbackArtworkDataUri(label);
-  const pillMarkup = card.postType ? `<span class="media-pill">${escapeHtml(card.postType)}</span>` : "";
 
   if (card.media.kind === "video" && card.media.url) {
     const poster = escapeHtml(card.media.thumbnailUrl || card.media.remoteUrl || fallbackSrc);
@@ -449,7 +445,6 @@ function createModalMediaMarkup(card) {
         <video ${playbackAttrs} controls playsinline preload="metadata" poster="${poster}" data-remote-poster="${escapeHtml(card.media.remoteUrl || "")}" data-fallback-label="${escapeHtml(label)}">
           <source src="${escapeHtml(card.media.url)}" />
         </video>
-        ${pillMarkup}
       </div>
     `;
   }
@@ -465,7 +460,6 @@ function createModalMediaMarkup(card) {
         data-remote-src="${remoteSrc}"
         data-fallback-src="${escapeHtml(fallbackSrc)}"
       />
-      ${pillMarkup}
     </div>
   `;
 }

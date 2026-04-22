@@ -120,6 +120,7 @@ export function createRuntimeCard(post, rawPost, config) {
       showAuthorPicture: config.card.showAuthorPicture,
       showDate: config.card.showDate,
       showActionsBar: config.card.showActionsBar,
+      showText: config.card.showText,
       showSource: config.card.showSource,
       showLikes: config.card.showLikes,
       showComments: config.card.showComments,
