@@ -60,7 +60,7 @@
     "showComments": true,
     "showShares": true,
     "videoAutoplay": false,
-    "textPreviewLines": 4
+    "textPreviewLines": 3
   },
   "interaction": {
     "enableExternalLinks": true,
