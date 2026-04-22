@@ -263,6 +263,7 @@ function normalizeRawPost(post) {
     likeCount: normalizeNullableNumber(source.likeCount),
     commentCount: normalizeNullableNumber(source.commentCount),
     shareCount: normalizeNullableNumber(source.shareCount),
+    hashtags: normalizeHashtagList(source.hashtags),
     sourcePayload: typeof source.sourcePayload === "object" && source.sourcePayload !== null ? source.sourcePayload : {}
   };
 }
@@ -275,7 +276,7 @@ function normalizeCollectedPost(post, sourceMap) {
     sourceMap.get(getSourceId(post.platform, post.platform === "facebook" ? post.permalink : post.accountUsername));
   const sourcePayload = post.sourcePayload || {};
   const combinedText = buildCombinedText(post, sourcePayload);
-  const hashtags = extractHashtags(combinedText);
+  const hashtags = Array.from(new Set([...post.hashtags, ...extractHashtags(combinedText)]));
   const likes = normalizeMetric(post.likeCount);
   const comments = normalizeMetric(post.commentCount);
   const shares = normalizeMetric(post.shareCount);
@@ -618,12 +619,32 @@ function collectTextualPayloadValues(value, collected, keyHint = "", depth = 0) 
 }
 
 function extractHashtags(value) {
-  return Array.from(new Set((String(value || "").match(/#([\p{L}\p{N}_]+)/gu) || []).map((item) => item.slice(1).toLowerCase())));
+  return normalizeHashtagList(String(value || "").match(/[#＃][\p{L}\p{N}_]+/gu) || []);
 }
 
 function matchesHashtagFilter(post, tag) {
-  const normalizedTag = cleanString(tag).replace(/^#/, "").toLowerCase();
-  return post.hashtags.includes(normalizedTag) || post.text.toLowerCase().includes(`#${normalizedTag}`);
+  const normalizedTag = normalizeHashtag(tag);
+
+  if (!normalizedTag) {
+    return false;
+  }
+
+  const normalizedText = post.text.toLowerCase();
+  return (
+    post.hashtags.includes(normalizedTag) ||
+    normalizedText.includes(`#${normalizedTag}`) ||
+    normalizedText.includes(`＃${normalizedTag}`)
+  );
+}
+
+function normalizeHashtagList(value) {
+  return Array.from(
+    new Set((Array.isArray(value) ? value : [value]).map(normalizeHashtag).filter(Boolean))
+  );
+}
+
+function normalizeHashtag(value) {
+  return cleanString(value).replace(/^[#＃]+/, "").toLowerCase();
 }
 
 function resolvePreferredMediaUrl(primaryValue, fallbackValue) {
