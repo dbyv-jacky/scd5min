@@ -3,11 +3,11 @@ const EMBED_MESSAGE_TYPE = "social-wall:resize";
 const EMBED_SYNC_DELAY_MS = 120;
 
 const appRoot = document.getElementById("app");
-const filterRoot = document.getElementById("filters");
 
 const state = {
   data: null,
-  activeFilter: "all"
+  activeFilter: "all",
+  selectedCardId: null
 };
 
 boot().catch((error) => {
@@ -26,6 +26,9 @@ async function boot() {
 
   if (freshData) {
     state.data = freshData;
+    if (!findCardById(state.selectedCardId)) {
+      state.selectedCardId = null;
+    }
     render();
   }
 
@@ -67,10 +70,12 @@ async function fetchBoardData() {
 }
 
 function bindGlobalListeners() {
-  if (filterRoot) {
-    filterRoot.addEventListener("click", handleFilterClick);
+  if (appRoot) {
+    appRoot.addEventListener("click", handleAppClick);
+    appRoot.addEventListener("keydown", handleAppKeydown);
   }
 
+  document.addEventListener("keydown", handleDocumentKeydown);
   window.addEventListener("resize", scheduleEmbedHeightSync);
   window.addEventListener("load", scheduleEmbedHeightSync);
 
@@ -86,22 +91,65 @@ function bindGlobalListeners() {
   }
 }
 
-function handleFilterClick(event) {
-  const button = event.target.closest("[data-filter]");
+function handleAppClick(event) {
+  const closeTrigger = event.target.closest("[data-close-modal]");
 
-  if (!button || !button.dataset.filter) {
+  if (closeTrigger) {
+    closeModal();
     return;
   }
 
-  state.activeFilter = button.dataset.filter;
-  renderFilters();
-  renderFeed();
+  const backdrop = event.target.closest("[data-modal-backdrop]");
+
+  if (backdrop && event.target === backdrop) {
+    closeModal();
+    return;
+  }
+
+  const filterButton = event.target.closest("[data-filter]");
+
+  if (filterButton?.dataset.filter) {
+    state.activeFilter = filterButton.dataset.filter;
+    renderFilters();
+    renderFeed();
+    return;
+  }
+
+  const cardNode = event.target.closest("[data-card-id]");
+
+  if (!cardNode?.dataset.cardId || event.target.closest("a, button, video")) {
+    return;
+  }
+
+  openCard(cardNode.dataset.cardId);
+}
+
+function handleAppKeydown(event) {
+  const cardNode = event.target.closest("[data-card-id]");
+
+  if (!cardNode?.dataset.cardId) {
+    return;
+  }
+
+  if (event.key !== "Enter" && event.key !== " ") {
+    return;
+  }
+
+  event.preventDefault();
+  openCard(cardNode.dataset.cardId);
+}
+
+function handleDocumentKeydown(event) {
+  if (event.key === "Escape" && state.selectedCardId) {
+    closeModal();
+  }
 }
 
 function render() {
   renderShell();
   renderFilters();
   renderFeed();
+  renderModal();
 }
 
 function renderShell() {
@@ -111,7 +159,7 @@ function renderShell() {
 
   const { config } = state.data;
   const filterMarkup = config.header.showTabs
-    ? `<nav class="filters" id="filters"></nav>`
+    ? '<nav class="filters" id="filters" aria-label="Source filters"></nav>'
     : "";
 
   document.title = `${config.name || state.data.board.name}`;
@@ -124,19 +172,15 @@ function renderShell() {
   appRoot.innerHTML = `
     <main class="board-shell">
       <header class="board-header">
+        <p class="eyebrow">${escapeHtml(state.data.board.id)}</p>
         <h1>${escapeHtml(config.header.title)}</h1>
         <p class="board-caption">${escapeHtml(config.header.caption || "")}</p>
       </header>
       ${filterMarkup}
       <section class="board-grid board-grid--${escapeHtml(config.layout.mode)}" id="board-grid"></section>
     </main>
+    <div id="modal-root"></div>
   `;
-
-  const nextFilterRoot = document.getElementById("filters");
-
-  if (nextFilterRoot && nextFilterRoot !== filterRoot) {
-    nextFilterRoot.addEventListener("click", handleFilterClick);
-  }
 }
 
 function renderFilters() {
@@ -217,56 +261,135 @@ function renderFeed() {
 
 function renderCard(card) {
   const mediaMarkup = createMediaMarkup(card);
-  const kickerMarkup = card.postType ? `<p class="card-kicker">${escapeHtml(card.postType)}</p>` : "";
-  const copyMarkup = `
-    <div class="card-copy">
-      <h2>${escapeHtml(card.title)}</h2>
-      ${card.display.showText ? `<p style="--line-clamp:${card.display.textPreviewLines}">${escapeHtml(card.excerpt)}</p>` : ""}
-    </div>
-  `;
-  const metaItems = [];
-
-  if (card.authorName || card.sourceName) {
-    metaItems.push(card.authorName || card.sourceName);
-  }
-
-  if (card.dateLabel) {
-    metaItems.push(card.dateLabel);
-  }
-
-  if (card.display.showSource && card.sourceName && card.sourceName !== card.authorName) {
-    metaItems.push(formatSourceLabel(card));
-  }
-
-  const metaMarkup = metaItems.length
+  const metaMarkup = createCardMetaMarkup(card);
+  const sourceLine = card.display.showSource ? `<p class="card-source">${escapeHtml(formatSourceLabel(card))}</p>` : "";
+  const copyMarkup = card.display.showText
     ? `
-        <footer class="card-meta">
-          ${metaItems.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}
-        </footer>
+        <div class="card-copy">
+          <h2>${escapeHtml(card.title)}</h2>
+          <p style="--line-clamp:${card.display.textPreviewLines}">${escapeHtml(card.excerpt)}</p>
+        </div>
       `
     : "";
-  const metrics = card.display.showActionsBar
-    ? `
-        <footer class="card-metrics">
-          ${card.display.showLikes ? `<span>Likes ${card.metrics.likes}</span>` : ""}
-          ${card.display.showComments ? `<span>Comments ${card.metrics.comments}</span>` : ""}
-          ${card.display.showShares ? `<span>Shares ${card.metrics.shares}</span>` : ""}
-        </footer>
-      `
+  const metricsMarkup = createMetricsMarkup(card);
+  const isInteractive = canOpenCard(card);
+  const interactiveAttrs = isInteractive
+    ? ' role="button" tabindex="0" aria-haspopup="dialog"'
     : "";
-  const externalLinkAttrs = card.permalink ? `href="${escapeHtml(card.permalink)}" target="_blank" rel="noreferrer"` : "";
 
   return `
-    <article class="card">
+    <article class="card${isInteractive ? " is-clickable" : ""}" data-card-id="${escapeHtml(card.id)}"${interactiveAttrs}>
       ${mediaMarkup}
       <div class="card-body">
-        ${kickerMarkup}
-        ${copyMarkup}
         ${metaMarkup}
-        ${metrics}
-        ${card.permalink ? `<a class="card-link" ${externalLinkAttrs}>Open original post</a>` : ""}
+        ${copyMarkup}
+        ${sourceLine}
+        ${metricsMarkup}
       </div>
     </article>
+  `;
+}
+
+function renderModal() {
+  const modalRoot = document.getElementById("modal-root");
+  const selectedCard = getSelectedCard();
+
+  if (!modalRoot || !state.data) {
+    return;
+  }
+
+  document.body.classList.toggle("has-modal", Boolean(selectedCard));
+
+  if (!selectedCard) {
+    modalRoot.innerHTML = "";
+    scheduleEmbedHeightSync();
+    return;
+  }
+
+  const { config } = state.data;
+  const modalMediaMarkup = createModalMediaMarkup(selectedCard);
+  const metaMarkup = createPopupMetaMarkup(selectedCard);
+  const sourceMarkup = selectedCard.display.showSource
+    ? `<p class="card-source">${escapeHtml(formatSourceLabel(selectedCard))}</p>`
+    : "";
+  const originalLinkMarkup = config.interaction.enableExternalLinks && selectedCard.permalink
+    ? `<a class="modal-link" href="${escapeHtml(selectedCard.permalink)}" target="_blank" rel="noreferrer">Open original post</a>`
+    : "";
+
+  modalRoot.innerHTML = `
+    <div class="modal-backdrop modal-backdrop--${escapeHtml(config.interaction.popupAnimation || "dissolve")}" data-modal-backdrop>
+      <section
+        class="modal-card modal-card--${escapeHtml(config.interaction.popupStyle || "lightbox")} modal-card--${escapeHtml(config.interaction.popupAnimation || "dissolve")}"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
+      >
+        <button class="modal-close" type="button" data-close-modal>Close</button>
+        <p class="eyebrow">Post preview</p>
+        ${modalMediaMarkup}
+        ${metaMarkup}
+        <h3 id="modal-title">${escapeHtml(selectedCard.title)}</h3>
+        <p class="modal-copy">${escapeHtml(selectedCard.excerpt)}</p>
+        ${sourceMarkup}
+        ${originalLinkMarkup}
+      </section>
+    </div>
+  `;
+
+  scheduleEmbedHeightSync();
+}
+
+function createCardMetaMarkup(card) {
+  const hasAvatar = card.display.showAuthorPicture;
+  const hasAuthorName = card.display.showAuthorName && card.authorName;
+  const hasDate = card.display.showDate && card.dateLabel;
+
+  if (!hasAvatar && !hasAuthorName && !hasDate) {
+    return "";
+  }
+
+  return `
+    <div class="card-meta">
+      ${hasAvatar ? createAvatarMarkup(card) : ""}
+      <div>
+        ${hasAuthorName ? `<strong>${escapeHtml(card.authorName)}</strong>` : ""}
+        ${hasDate ? `<p>${escapeHtml(card.dateLabel)}</p>` : ""}
+      </div>
+    </div>
+  `;
+}
+
+function createPopupMetaMarkup(card) {
+  const hasAvatar = card.display.showAuthorPicture;
+  const hasAuthorName = card.display.showAuthorName && card.authorName;
+  const hasDate = card.display.showDate && card.dateLabel;
+
+  if (!hasAvatar && !hasAuthorName && !hasDate) {
+    return "";
+  }
+
+  return `
+    <div class="modal-card__meta">
+      ${hasAvatar ? createAvatarMarkup(card) : ""}
+      <div>
+        ${hasAuthorName ? `<strong>${escapeHtml(card.authorName)}</strong>` : ""}
+        ${hasDate ? `<p>${escapeHtml(card.dateLabel)}</p>` : ""}
+      </div>
+    </div>
+  `;
+}
+
+function createMetricsMarkup(card) {
+  if (!card.display.showActionsBar) {
+    return "";
+  }
+
+  return `
+    <footer class="card-metrics">
+      ${card.display.showLikes ? `<span>Likes ${card.metrics.likes}</span>` : ""}
+      ${card.display.showComments ? `<span>Comments ${card.metrics.comments}</span>` : ""}
+      ${card.display.showShares ? `<span>Shares ${card.metrics.shares}</span>` : ""}
+    </footer>
   `;
 }
 
@@ -277,16 +400,17 @@ function createMediaMarkup(card) {
 
   const label = card.title || card.authorName || card.platform;
   const fallbackSrc = createFallbackArtworkDataUri(label);
+  const pillMarkup = card.postType ? `<span class="media-pill">${escapeHtml(card.postType)}</span>` : "";
 
   if (card.media.kind === "video" && card.media.url && card.display.videoAutoplay) {
-    const autoplay = card.display.videoAutoplay ? "autoplay muted loop playsinline" : "controls playsinline";
     const poster = escapeHtml(card.media.thumbnailUrl || card.media.remoteUrl || fallbackSrc);
 
     return `
       <div class="card-media"${createMediaStyle(card.media)}>
-        <video ${autoplay} preload="metadata" poster="${poster}" data-remote-poster="${escapeHtml(card.media.remoteUrl || "")}" data-fallback-label="${escapeHtml(label)}">
+        <video autoplay muted loop playsinline preload="metadata" poster="${poster}" data-remote-poster="${escapeHtml(card.media.remoteUrl || "")}" data-fallback-label="${escapeHtml(label)}">
           <source src="${escapeHtml(card.media.url)}" />
         </video>
+        ${pillMarkup}
       </div>
     `;
   }
@@ -302,6 +426,46 @@ function createMediaMarkup(card) {
         data-remote-src="${remoteSrc}"
         data-fallback-src="${escapeHtml(fallbackSrc)}"
       />
+      ${pillMarkup}
+    </div>
+  `;
+}
+
+function createModalMediaMarkup(card) {
+  if (!card.media) {
+    return "";
+  }
+
+  const label = card.title || card.authorName || card.platform;
+  const fallbackSrc = createFallbackArtworkDataUri(label);
+  const pillMarkup = card.postType ? `<span class="media-pill">${escapeHtml(card.postType)}</span>` : "";
+
+  if (card.media.kind === "video" && card.media.url) {
+    const poster = escapeHtml(card.media.thumbnailUrl || card.media.remoteUrl || fallbackSrc);
+    const playbackAttrs = card.display.videoAutoplay ? "autoplay loop" : "";
+
+    return `
+      <div class="modal-card__media"${createMediaStyle(card.media)}>
+        <video ${playbackAttrs} controls playsinline preload="metadata" poster="${poster}" data-remote-poster="${escapeHtml(card.media.remoteUrl || "")}" data-fallback-label="${escapeHtml(label)}">
+          <source src="${escapeHtml(card.media.url)}" />
+        </video>
+        ${pillMarkup}
+      </div>
+    `;
+  }
+
+  const primarySrc = escapeHtml(card.media.thumbnailUrl || card.media.url || fallbackSrc);
+  const remoteSrc = escapeHtml(card.media.remoteUrl || "");
+
+  return `
+    <div class="modal-card__media"${createMediaStyle(card.media)}>
+      <img
+        src="${primarySrc}"
+        alt="${escapeHtml(label)}"
+        data-remote-src="${remoteSrc}"
+        data-fallback-src="${escapeHtml(fallbackSrc)}"
+      />
+      ${pillMarkup}
     </div>
   `;
 }
@@ -350,6 +514,64 @@ function getVisibleCards() {
   }
 
   return cards.filter((card) => card.platform === state.activeFilter);
+}
+
+function getSelectedCard() {
+  return findCardById(state.selectedCardId);
+}
+
+function findCardById(cardId) {
+  if (!cardId) {
+    return null;
+  }
+
+  const cards = Array.isArray(state.data?.cards) ? state.data.cards : [];
+  return cards.find((card) => card.id === cardId) || null;
+}
+
+function canOpenCard(card) {
+  const interactionMode = state.data?.config?.interaction?.onPostClick || "popup";
+
+  if (interactionMode === "disabled") {
+    return false;
+  }
+
+  if (interactionMode === "new-tab") {
+    return Boolean(card.permalink && state.data?.config?.interaction?.enableExternalLinks);
+  }
+
+  return true;
+}
+
+function openCard(cardId) {
+  const card = findCardById(cardId);
+
+  if (!card || !state.data) {
+    return;
+  }
+
+  const { interaction } = state.data.config;
+
+  if (interaction.onPostClick === "disabled") {
+    return;
+  }
+
+  if (interaction.onPostClick === "new-tab" && interaction.enableExternalLinks && card.permalink) {
+    window.open(card.permalink, interaction.openLinksInNewTab ? "_blank" : "_self", "noopener,noreferrer");
+    return;
+  }
+
+  state.selectedCardId = card.id;
+  renderModal();
+}
+
+function closeModal() {
+  if (!state.selectedCardId) {
+    return;
+  }
+
+  state.selectedCardId = null;
+  renderModal();
 }
 
 function formatSourceLabel(card) {

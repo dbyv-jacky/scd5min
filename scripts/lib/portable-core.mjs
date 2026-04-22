@@ -194,7 +194,9 @@ function normalizeBoardConfig(config) {
     interaction: {
       enableExternalLinks: normalizeBoolean(source.interaction?.enableExternalLinks, true),
       openLinksInNewTab: normalizeBoolean(source.interaction?.openLinksInNewTab, true),
-      onPostClick: normalizeClickMode(source.interaction?.onPostClick)
+      onPostClick: normalizeClickMode(source.interaction?.onPostClick),
+      popupStyle: normalizePopupStyle(source.interaction?.popupStyle),
+      popupAnimation: normalizePopupAnimation(source.interaction?.popupAnimation)
     },
     style: {
       theme: normalizeTheme(source.style?.theme),
@@ -517,6 +519,14 @@ function normalizeSourceStyle(value) {
 
 function normalizeClickMode(value) {
   return ["popup", "new-tab", "disabled"].includes(value) ? value : "popup";
+}
+
+function normalizePopupStyle(value) {
+  return ["lightbox", "side-panel"].includes(value) ? value : "lightbox";
+}
+
+function normalizePopupAnimation(value) {
+  return ["dissolve", "soft-rise"].includes(value) ? value : "dissolve";
 }
 
 function normalizeTheme(value) {
