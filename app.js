@@ -110,6 +110,9 @@ function renderShell() {
   }
 
   const { config } = state.data;
+  const filterMarkup = config.header.showTabs
+    ? `<nav class="filters" id="filters"></nav>`
+    : "";
 
   document.title = `${config.name || state.data.board.name}`;
   document.documentElement.dataset.theme = config.style.theme;
@@ -121,11 +124,10 @@ function renderShell() {
   appRoot.innerHTML = `
     <main class="board-shell">
       <header class="board-header">
-        <p class="eyebrow">${escapeHtml(state.data.board.id)}</p>
         <h1>${escapeHtml(config.header.title)}</h1>
         <p class="board-caption">${escapeHtml(config.header.caption || "")}</p>
       </header>
-      <nav class="filters${config.header.showTabs ? "" : " is-hidden"}" id="filters"></nav>
+      ${filterMarkup}
       <section class="board-grid board-grid--${escapeHtml(config.layout.mode)}" id="board-grid"></section>
     </main>
   `;
@@ -215,26 +217,42 @@ function renderFeed() {
 
 function renderCard(card) {
   const mediaMarkup = createMediaMarkup(card);
-  const sourceLine = card.display.showSource ? `<p class="card-source">${escapeHtml(formatSourceLabel(card))}</p>` : "";
-  const copyMarkup = card.display.showText
+  const kickerMarkup = card.postType ? `<p class="card-kicker">${escapeHtml(card.postType)}</p>` : "";
+  const copyMarkup = `
+    <div class="card-copy">
+      <h2>${escapeHtml(card.title)}</h2>
+      ${card.display.showText ? `<p style="--line-clamp:${card.display.textPreviewLines}">${escapeHtml(card.excerpt)}</p>` : ""}
+    </div>
+  `;
+  const metaItems = [];
+
+  if (card.authorName || card.sourceName) {
+    metaItems.push(card.authorName || card.sourceName);
+  }
+
+  if (card.dateLabel) {
+    metaItems.push(card.dateLabel);
+  }
+
+  if (card.display.showSource && card.sourceName && card.sourceName !== card.authorName) {
+    metaItems.push(formatSourceLabel(card));
+  }
+
+  const metaMarkup = metaItems.length
     ? `
-        <div class="card-copy">
-          <h2>${escapeHtml(card.title)}</h2>
-          <p style="--line-clamp:${card.display.textPreviewLines}">${escapeHtml(card.excerpt)}</p>
-        </div>
+        <footer class="card-meta">
+          ${metaItems.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}
+        </footer>
       `
     : "";
   const metrics = card.display.showActionsBar
     ? `
-      <footer class="card-metrics">
-        ${card.display.showLikes ? `<span>Likes ${card.metrics.likes}</span>` : ""}
-        ${card.display.showComments ? `<span>Comments ${card.metrics.comments}</span>` : ""}
-        ${card.display.showShares ? `<span>Shares ${card.metrics.shares}</span>` : ""}
-      </footer>
-    `
-    : "";
-  const authorAvatar = card.display.showAuthorPicture
-    ? createAvatarMarkup(card)
+        <footer class="card-metrics">
+          ${card.display.showLikes ? `<span>Likes ${card.metrics.likes}</span>` : ""}
+          ${card.display.showComments ? `<span>Comments ${card.metrics.comments}</span>` : ""}
+          ${card.display.showShares ? `<span>Shares ${card.metrics.shares}</span>` : ""}
+        </footer>
+      `
     : "";
   const externalLinkAttrs = card.permalink ? `href="${escapeHtml(card.permalink)}" target="_blank" rel="noreferrer"` : "";
 
@@ -242,15 +260,9 @@ function renderCard(card) {
     <article class="card">
       ${mediaMarkup}
       <div class="card-body">
-        <div class="card-meta">
-          ${authorAvatar}
-          <div>
-            ${card.display.showAuthorName ? `<strong>${escapeHtml(card.authorName)}</strong>` : ""}
-            ${card.display.showDate ? `<p>${escapeHtml(card.dateLabel)}</p>` : ""}
-          </div>
-        </div>
+        ${kickerMarkup}
         ${copyMarkup}
-        ${sourceLine}
+        ${metaMarkup}
         ${metrics}
         ${card.permalink ? `<a class="card-link" ${externalLinkAttrs}>Open original post</a>` : ""}
       </div>
@@ -266,7 +278,7 @@ function createMediaMarkup(card) {
   const label = card.title || card.authorName || card.platform;
   const fallbackSrc = createFallbackArtworkDataUri(label);
 
-  if (card.media.kind === "video" && card.media.url) {
+  if (card.media.kind === "video" && card.media.url && card.display.videoAutoplay) {
     const autoplay = card.display.videoAutoplay ? "autoplay muted loop playsinline" : "controls playsinline";
     const poster = escapeHtml(card.media.thumbnailUrl || card.media.remoteUrl || fallbackSrc);
 
@@ -275,7 +287,6 @@ function createMediaMarkup(card) {
         <video ${autoplay} preload="metadata" poster="${poster}" data-remote-poster="${escapeHtml(card.media.remoteUrl || "")}" data-fallback-label="${escapeHtml(label)}">
           <source src="${escapeHtml(card.media.url)}" />
         </video>
-        <span class="media-pill">${escapeHtml(card.postType)}</span>
       </div>
     `;
   }
@@ -291,7 +302,6 @@ function createMediaMarkup(card) {
         data-remote-src="${remoteSrc}"
         data-fallback-src="${escapeHtml(fallbackSrc)}"
       />
-      <span class="media-pill">${escapeHtml(card.postType)}</span>
     </div>
   `;
 }
