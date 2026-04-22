@@ -24,8 +24,8 @@ async function main() {
   const boardData = buildRuntimeBoardData(feed || {}, config || {});
 
   await Promise.all([
-    buildHtmlFile("index.html", assetManifest),
-    buildHtmlFile("embed.html", assetManifest),
+    buildHtmlFile("index.html", assetManifest, boardData),
+    buildHtmlFile("embed.html", assetManifest, boardData),
     fs.writeFile(path.join(ROOT_DIR, "board.data.json"), `${JSON.stringify(boardData, null, 2)}\n`, "utf8"),
     fs.writeFile(path.join(DIST_DIR, "board.data.json"), `${JSON.stringify(boardData, null, 2)}\n`, "utf8"),
     copyStaticFile("feed.json")
@@ -52,12 +52,16 @@ async function buildHashedAssets() {
   return manifest;
 }
 
-async function buildHtmlFile(fileName, assetManifest) {
+async function buildHtmlFile(fileName, assetManifest, boardData) {
   const sourcePath = path.join(ROOT_DIR, fileName);
   let html = await fs.readFile(sourcePath, "utf8");
 
   html = html.replaceAll('href="./styles.css"', `href="./${assetManifest["styles.css"]}"`);
   html = html.replaceAll('src="./app.js"', `src="./${assetManifest["app.js"]}"`);
+  html = html.replace(
+    /<script id="board-bootstrap" type="application\/json">[\s\S]*?<\/script>/,
+    `<script id="board-bootstrap" type="application/json">${serializeInlineJson(boardData)}</script>`
+  );
 
   await fs.writeFile(path.join(DIST_DIR, fileName), html, "utf8");
 }
@@ -120,4 +124,8 @@ async function readJson(filePath) {
 
 function ensureTrailingSlash(value) {
   return value.endsWith("/") ? value : `${value}/`;
+}
+
+function serializeInlineJson(value) {
+  return JSON.stringify(value).replace(/</g, "\\u003c");
 }
