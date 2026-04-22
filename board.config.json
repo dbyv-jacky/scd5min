@@ -11,8 +11,8 @@
   "header": {
     "title": "鮑思高慈青營協會 親子五分鐘",
     "caption": "短短時間，分享親子溝通與相處方式，相信親子相處有法，為家庭和孩子成長帶來幫助。",
-    "showTabs": false,
-    "groupSourcesByPlatform": false
+    "showTabs": true,
+    "groupSourcesByPlatform": true
   },
   "filters": {
     "platforms": [],
@@ -46,19 +46,19 @@
   "layout": {
     "mode": "grid",
     "columns": 3,
-    "itemSpacing": 40
+    "itemSpacing": 24
   },
   "card": {
-    "showAuthorName": false,
-    "showAuthorPicture": false,
-    "showDate": false,
-    "showActionsBar": false,
+    "showAuthorName": true,
+    "showAuthorPicture": true,
+    "showDate": true,
+    "showActionsBar": true,
     "showText": true,
-    "showSource": false,
-    "sourceStyle": "icon",
-    "showLikes": false,
-    "showComments": false,
-    "showShares": false,
+    "showSource": true,
+    "sourceStyle": "icon-text",
+    "showLikes": true,
+    "showComments": true,
+    "showShares": true,
     "videoAutoplay": false,
     "textPreviewLines": 4
   },
