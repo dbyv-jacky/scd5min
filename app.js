@@ -187,7 +187,6 @@ function renderShell() {
   appRoot.innerHTML = `
     <main class="board-shell">
       <header class="board-header">
-        <p class="eyebrow">${escapeHtml(state.data.board.id)}</p>
         <h1>${escapeHtml(config.header.title)}</h1>
         <p class="board-caption">${escapeHtml(config.header.caption || "")}</p>
       </header>
