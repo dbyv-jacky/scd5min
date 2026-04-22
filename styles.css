@@ -266,7 +266,7 @@ body.board-page--embed .board-shell {
 }
 
 .card-body {
-  padding: 16px;
+  padding: 18px 18px 20px;
 }
 
 .card-meta {
@@ -321,7 +321,7 @@ body.board-page--embed .board-shell {
 .card-copy p,
 .modal-copy {
   margin: 0;
-  color: var(--muted);
+  color: var(--ink);
 }
 
 .card-copy p {
@@ -329,6 +329,8 @@ body.board-page--embed .board-shell {
   overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: var(--line-clamp, 3);
+  font-size: 0.98rem;
+  line-height: 1.58;
 }
 
 .card-source,
@@ -346,6 +348,32 @@ body.board-page--embed .board-shell {
   flex-wrap: wrap;
   gap: 10px;
   margin-top: 14px;
+}
+
+.board-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 28px;
+}
+
+.load-more-btn {
+  border: 0;
+  border-radius: 999px;
+  padding: 13px 22px;
+  background: linear-gradient(135deg, var(--board-accent), #f18d4f);
+  color: white;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.load-more-btn:hover,
+.load-more-btn:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-strong);
+  outline: none;
 }
 
 .empty-card {

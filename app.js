@@ -7,7 +7,8 @@ const appRoot = document.getElementById("app");
 const state = {
   data: null,
   activeFilter: "all",
-  selectedCardId: null
+  selectedCardId: null,
+  visibleCount: 0
 };
 
 boot().catch((error) => {
@@ -19,6 +20,7 @@ async function boot() {
 
   if (bootstrapData) {
     state.data = bootstrapData;
+    resetVisibleCount();
     render();
   }
 
@@ -29,6 +31,7 @@ async function boot() {
     if (!findCardById(state.selectedCardId)) {
       state.selectedCardId = null;
     }
+    resetVisibleCount();
     render();
   }
 
@@ -110,8 +113,19 @@ function handleAppClick(event) {
 
   if (filterButton?.dataset.filter) {
     state.activeFilter = filterButton.dataset.filter;
+    resetVisibleCount();
     renderFilters();
     renderFeed();
+    renderLoadMore();
+    return;
+  }
+
+  const loadMoreTrigger = event.target.closest("[data-load-more]");
+
+  if (loadMoreTrigger && state.data) {
+    state.visibleCount += getPageSize();
+    renderFeed();
+    renderLoadMore();
     return;
   }
 
@@ -149,6 +163,7 @@ function render() {
   renderShell();
   renderFilters();
   renderFeed();
+  renderLoadMore();
   renderModal();
 }
 
@@ -178,6 +193,7 @@ function renderShell() {
       </header>
       ${filterMarkup}
       <section class="board-grid board-grid--${escapeHtml(config.layout.mode)}" id="board-grid"></section>
+      <div class="board-actions" id="board-actions"></div>
     </main>
     <div id="modal-root"></div>
   `;
@@ -255,6 +271,33 @@ function renderFeed() {
       scheduleEmbedHeightSync();
     }, { once: true });
   });
+
+  scheduleEmbedHeightSync();
+}
+
+function renderLoadMore() {
+  const actionsNode = document.getElementById("board-actions");
+
+  if (!actionsNode || !state.data) {
+    return;
+  }
+
+  const { config } = state.data;
+  const filteredCards = getFilteredCards();
+
+  if (!config.limit.loadMoreEnabled || filteredCards.length <= state.visibleCount) {
+    actionsNode.innerHTML = "";
+    scheduleEmbedHeightSync();
+    return;
+  }
+
+  const remainingCards = filteredCards.length - state.visibleCount;
+
+  actionsNode.innerHTML = `
+    <button type="button" class="load-more-btn" data-load-more>
+      Load More${remainingCards > 0 ? ` (${remainingCards} left)` : ""}
+    </button>
+  `;
 
   scheduleEmbedHeightSync();
 }
@@ -500,7 +543,7 @@ function handleImageFallback(event) {
   }
 }
 
-function getVisibleCards() {
+function getFilteredCards() {
   const cards = Array.isArray(state.data?.cards) ? state.data.cards : [];
 
   if (state.activeFilter === "all") {
@@ -508,6 +551,46 @@ function getVisibleCards() {
   }
 
   return cards.filter((card) => card.platform === state.activeFilter);
+}
+
+function getVisibleCards() {
+  const cards = getFilteredCards();
+
+  if (!state.data?.config?.limit?.loadMoreEnabled) {
+    return cards;
+  }
+
+  return cards.slice(0, state.visibleCount);
+}
+
+function resetVisibleCount() {
+  if (!state.data) {
+    state.visibleCount = 0;
+    return;
+  }
+
+  const cards = getFilteredCards();
+
+  if (!state.data.config.limit.loadMoreEnabled) {
+    state.visibleCount = cards.length;
+    return;
+  }
+
+  state.visibleCount = Math.min(getPageSize(), cards.length);
+}
+
+function getPageSize() {
+  const limit = state.data?.config?.limit;
+
+  if (!limit) {
+    return 8;
+  }
+
+  if (typeof window !== "undefined" && window.matchMedia?.("(max-width: 767px)").matches) {
+    return limit.itemsPerPageMobile || limit.itemsPerPage || 8;
+  }
+
+  return limit.itemsPerPage || limit.itemsPerPageMobile || 8;
 }
 
 function getSelectedCard() {

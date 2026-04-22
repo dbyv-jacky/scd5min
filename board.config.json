@@ -6,7 +6,7 @@
       "dbyv_scd_macau"
     ],
     "facebookPages": [],
-    "perSourceLimit": 24
+    "perSourceLimit": 30
   },
   "header": {
     "title": "鮑思高慈青營協會 親子五分鐘",
@@ -38,10 +38,10 @@
     "hiddenPostIds": []
   },
   "limit": {
-    "totalItems": 10,
-    "itemsPerPage": 12,
-    "itemsPerPageMobile": 4,
-    "loadMoreEnabled": false
+    "totalItems": 30,
+    "itemsPerPage": 8,
+    "itemsPerPageMobile": 8,
+    "loadMoreEnabled": true
   },
   "layout": {
     "mode": "grid",
