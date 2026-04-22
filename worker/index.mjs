@@ -1,20 +1,11 @@
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    const assetRequest = buildAssetRequest(request, url);
-    const response = await env.ASSETS.fetch(assetRequest);
+    const response = await env.ASSETS.fetch(request);
 
     return applyCacheHeaders(url.pathname, response);
   }
 };
-
-function buildAssetRequest(request, url) {
-  if (url.pathname === "/") {
-    return new Request(new URL("/index.html", url), request);
-  }
-
-  return request;
-}
 
 function applyCacheHeaders(pathname, response) {
   if (!response || !response.ok) {
