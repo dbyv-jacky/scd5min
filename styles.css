@@ -3,7 +3,7 @@
   --board-accent: #da5d36;
   --board-gap: 18px;
   --board-columns: 3;
-  --board-font: "Manrope", "Segoe UI", sans-serif;
+  --board-font: "Noto Sans HK", "Noto Sans", sans-serif;
   --bg: #f8f5f0;
   --surface: #fffaf4;
   --ink: #1f1712;
@@ -26,6 +26,7 @@ body {
   margin: 0;
   min-height: 100vh;
   font-family: var(--board-font);
+  font-weight: 500;
   background: var(--bg);
   color: var(--ink);
 }
@@ -61,6 +62,7 @@ body.board-page--embed .board-shell {
 .board-header h1 {
   margin: 0 0 8px;
   font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 500;
   line-height: 1.05;
 }
 
@@ -234,6 +236,7 @@ body.board-page--embed .board-shell {
 .empty-card h2 {
   margin: 0;
   font-size: 1.1rem;
+  font-weight: 500;
   line-height: 1.16;
 }
 

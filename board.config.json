@@ -72,7 +72,7 @@
   "style": {
     "theme": "light",
     "accentColor": "#d95000",
-    "fontFamily": "Manrope",
+    "fontFamily": "\"Noto Sans HK\", \"Noto Sans\", sans-serif",
     "customCss": ""
   }
 }
