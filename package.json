@@ -1,0 +1,22 @@
+{
+  "name": "social-board-scd5min",
+  "private": true,
+  "version": "1.0.0",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=18.17.0"
+  },
+  "scripts": {
+    "build": "node scripts/build-worker-assets.js",
+    "build:feed": "node content-collector.js --config collector.config.json --output feed.json --sample-feed collected-feed.test.json",
+    "preview": "python3 -m http.server 4173 --bind 127.0.0.1 --directory dist",
+    "preview:root": "python3 -m http.server 4174 --bind 127.0.0.1 --directory .",
+    "validate:worker": "npm run build && npx wrangler deploy --dry-run",
+    "deploy:worker": "npm run build && npx wrangler deploy",
+    "preview:worker": "npx wrangler dev",
+    "refresh:local": "node scripts/refresh-board.js"
+  },
+  "devDependencies": {
+    "wrangler": "^4.84.1"
+  }
+}

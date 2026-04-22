@@ -1,0 +1,45 @@
+{
+  "kind": "github",
+  "boardId": "scd5min",
+  "boardName": "親子五分鐘",
+  "revisionId": "20260422055616",
+  "exportedAt": "2026-04-22T07:04:27.822Z",
+  "rootDir": "/Users/jcm2/Documents/Codex/social board builder/generated-packages/scd5min/github-pack",
+  "primaryOutputDir": "/Users/jcm2/Documents/Codex/social board builder/generated-packages/scd5min/github-pack/dist",
+  "files": [
+    "package.json",
+    "package-lock.json",
+    "wrangler.jsonc",
+    "worker/index.mjs",
+    "index.html",
+    "embed.html",
+    "app.js",
+    "styles.css",
+    "board.config.json",
+    "collector.config.json",
+    "feed.json",
+    "feed.seed.json",
+    "collected-feed.test.json",
+    "board.data.json",
+    ".github/workflows/refresh-and-deploy.yml",
+    "scripts/build-pages.js",
+    "scripts/refresh-board.js",
+    "index.html",
+    "embed.html",
+    "board.data.json",
+    "feed.json",
+    "app.67c83ad760.js",
+    "styles.007befca86.css"
+  ],
+  "schedule": {
+    "timezone": "Asia/Hong_Kong",
+    "labels": [
+      "12:30 PM",
+      "5:00 PM"
+    ],
+    "cron": [
+      "30 4 * * *",
+      "0 9 * * *"
+    ]
+  }
+}

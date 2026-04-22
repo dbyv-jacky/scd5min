@@ -1,0 +1,78 @@
+{
+  "id": "scd5min",
+  "name": "親子五分鐘",
+  "collector": {
+    "instagramUsernames": [
+      "dbyv_scd_macau"
+    ],
+    "facebookPages": [],
+    "perSourceLimit": 24
+  },
+  "header": {
+    "title": "鮑思高慈青營協會 親子五分鐘",
+    "caption": "短短時間，分享親子溝通與相處方式，相信親子相處有法，為家庭和孩子成長帶來幫助。",
+    "showTabs": false,
+    "groupSourcesByPlatform": false
+  },
+  "filters": {
+    "platforms": [],
+    "postTypes": [
+      "reel"
+    ],
+    "keywords": [],
+    "includeHashtags": [
+      "親子五分鐘"
+    ],
+    "excludeHashtags": [],
+    "dateFrom": "",
+    "dateTo": ""
+  },
+  "sort": {
+    "field": "recency",
+    "direction": "desc"
+  },
+  "manualPosts": {
+    "pinnedPostIds": [],
+    "forcedIncludePostIds": [],
+    "forcedExcludePostIds": [],
+    "hiddenPostIds": []
+  },
+  "limit": {
+    "totalItems": 10,
+    "itemsPerPage": 12,
+    "itemsPerPageMobile": 4,
+    "loadMoreEnabled": false
+  },
+  "layout": {
+    "mode": "grid",
+    "columns": 3,
+    "itemSpacing": 40
+  },
+  "card": {
+    "showAuthorName": false,
+    "showAuthorPicture": false,
+    "showDate": false,
+    "showActionsBar": false,
+    "showText": true,
+    "showSource": false,
+    "sourceStyle": "icon",
+    "showLikes": false,
+    "showComments": false,
+    "showShares": false,
+    "videoAutoplay": false,
+    "textPreviewLines": 4
+  },
+  "interaction": {
+    "enableExternalLinks": true,
+    "openLinksInNewTab": false,
+    "onPostClick": "popup",
+    "popupStyle": "lightbox",
+    "popupAnimation": "dissolve"
+  },
+  "style": {
+    "theme": "light",
+    "accentColor": "#d95000",
+    "fontFamily": "Manrope",
+    "customCss": ""
+  }
+}

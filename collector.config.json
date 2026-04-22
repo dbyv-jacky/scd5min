@@ -1,0 +1,9 @@
+{
+  "instagram": [
+    "dbyv_scd_macau"
+  ],
+  "facebook": [],
+  "perSourceLimit": 24,
+  "cacheDir": ".collector-cache",
+  "outputFile": "feed.json"
+}
