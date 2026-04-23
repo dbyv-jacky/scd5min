@@ -144,17 +144,19 @@ function buildFallbackSourceMap(entries) {
 
     for (const result of entry.payload.results) {
       const key = getSourceKey(result);
+      const existing = map.get(key);
 
-      if (!key || map.has(key) || !hasRenderableSourceData(result)) {
+      if (!key || !hasRenderableSourceData(result)) {
         continue;
       }
 
-      map.set(
-        key,
-        Object.assign(cloneJson(result), {
-          __fallbackLabel: entry.label
-        })
-      );
+      const candidate = Object.assign(cloneJson(result), {
+        __fallbackLabel: entry.label
+      });
+
+      if (!existing || getRenderablePostCount(candidate) > getRenderablePostCount(existing)) {
+        map.set(key, candidate);
+      }
     }
   }
 
