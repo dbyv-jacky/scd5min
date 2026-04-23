@@ -95,6 +95,13 @@ function bindGlobalListeners() {
 }
 
 function handleAppClick(event) {
+  const expandCopyTrigger = event.target.closest("[data-expand-copy]");
+
+  if (expandCopyTrigger) {
+    expandModalCopy(expandCopyTrigger);
+    return;
+  }
+
   const closeTrigger = event.target.closest("[data-close-modal]");
 
   if (closeTrigger) {
@@ -354,6 +361,7 @@ function renderModal() {
   const sourceMarkup = selectedCard.display.showSource
     ? `<p class="card-source">${escapeHtml(formatSourceLabel(selectedCard))}</p>`
     : "";
+  const modalCopyMarkup = createModalCopyMarkup(selectedCard);
   const originalLinkMarkup = config.interaction.enableExternalLinks && selectedCard.permalink
     ? `<a class="modal-link" href="${escapeHtml(selectedCard.permalink)}" target="_blank" rel="noreferrer">連接到社交平台</a>`
     : "";
@@ -371,13 +379,14 @@ function renderModal() {
         ${modalMediaMarkup}
         ${metaMarkup}
         <h3 id="modal-title">${escapeHtml(selectedCard.title)}</h3>
-        <p class="modal-copy">${escapeHtml(selectedCard.excerpt)}</p>
+        ${modalCopyMarkup}
         ${sourceMarkup}
         ${originalLinkMarkup}
       </section>
     </div>
   `;
 
+  syncModalCopyExpansion(modalRoot);
   scheduleEmbedHeightSync();
 }
 
@@ -650,6 +659,72 @@ function closeModal() {
   renderModal();
 }
 
+function createModalCopyMarkup(card) {
+  const text = getModalCopyText(card);
+
+  if (!text) {
+    return "";
+  }
+
+  return `
+    <div class="modal-copy-wrap">
+      <div class="modal-copy is-collapsed" data-modal-copy>${linkifyText(text)}</div>
+      <button class="modal-copy-toggle" type="button" data-expand-copy hidden>(...閱讀全文）</button>
+    </div>
+  `;
+}
+
+function getModalCopyText(card) {
+  const fullText = String(card?.text || card?.excerpt || card?.title || "").trim();
+  const title = String(card?.title || "").trim();
+
+  if (!fullText || !title) {
+    return fullText;
+  }
+
+  const firstIndex = fullText.indexOf(title);
+  const secondIndex = fullText.indexOf(title, firstIndex + title.length);
+
+  if (firstIndex === 0 && secondIndex > 0 && secondIndex <= Math.floor(fullText.length * 0.65)) {
+    return fullText.slice(secondIndex).trim();
+  }
+
+  return fullText;
+}
+
+function syncModalCopyExpansion(scope) {
+  const copyNode = scope?.querySelector("[data-modal-copy]");
+  const toggleNode = scope?.querySelector("[data-expand-copy]");
+
+  if (!copyNode || !toggleNode) {
+    return;
+  }
+
+  copyNode.classList.add("is-collapsed");
+  const hasOverflow = copyNode.scrollHeight > copyNode.clientHeight + 2;
+
+  copyNode.classList.toggle("modal-copy--overflow", hasOverflow);
+  toggleNode.hidden = !hasOverflow;
+
+  if (!hasOverflow) {
+    copyNode.classList.remove("is-collapsed");
+  }
+}
+
+function expandModalCopy(toggleNode) {
+  const modalCard = toggleNode.closest(".modal-card");
+  const copyNode = modalCard?.querySelector("[data-modal-copy]");
+
+  if (!copyNode) {
+    return;
+  }
+
+  copyNode.classList.remove("is-collapsed");
+  copyNode.classList.remove("modal-copy--overflow");
+  toggleNode.hidden = true;
+  scheduleEmbedHeightSync();
+}
+
 function formatSourceLabel(card) {
   const badge = card.platform === "instagram" ? "IG" : card.platform === "facebook" ? "FB" : card.platform.toUpperCase();
 
@@ -724,4 +799,34 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll("\"", "&quot;")
     .replaceAll("'", "&#39;");
+}
+
+function linkifyText(value) {
+  const parts = String(value || "").split(/(https?:\/\/[^\s<]+)/giu);
+
+  return parts
+    .map((part, index) => {
+      if (index % 2 === 0) {
+        return escapeHtml(part);
+      }
+
+      const { url, trailing } = splitTrailingUrlPunctuation(part);
+      return `<a href="${escapeHtml(url)}" target="_blank" rel="noreferrer">${escapeHtml(url)}</a>${escapeHtml(trailing)}`;
+    })
+    .join("");
+}
+
+function splitTrailingUrlPunctuation(value) {
+  let url = String(value || "");
+  let trailing = "";
+
+  while (/[),.!?;:，。！？；：）】》」]$/u.test(url)) {
+    trailing = url.slice(-1) + trailing;
+    url = url.slice(0, -1);
+  }
+
+  return {
+    url: url || value,
+    trailing
+  };
 }

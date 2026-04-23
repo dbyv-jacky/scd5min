@@ -437,6 +437,10 @@ body.board-page--embed .board-shell {
   line-height: 1.18;
 }
 
+.modal-copy-wrap {
+  margin-top: 10px;
+}
+
 .modal-card__meta {
   display: flex;
   align-items: center;
@@ -448,6 +452,51 @@ body.board-page--embed .board-shell {
   margin: 4px 0 0;
   color: var(--muted);
   font-size: 0.84rem;
+}
+
+.modal-copy {
+  font-size: 0.98rem;
+  line-height: 1.72;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.modal-copy.is-collapsed {
+  position: relative;
+  max-height: calc(1em * 1.72 * 9);
+  overflow: hidden;
+}
+
+.modal-copy.is-collapsed.modal-copy--overflow::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 3.4em;
+  background: linear-gradient(180deg, rgba(247, 241, 234, 0), var(--surface) 82%);
+  pointer-events: none;
+}
+
+.modal-copy a {
+  color: var(--board-accent);
+  text-decoration: underline;
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.12em;
+}
+
+.modal-copy-toggle {
+  margin-top: 12px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--board-accent);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.modal-copy-toggle:hover,
+.modal-copy-toggle:focus-visible {
+  text-decoration: underline;
 }
 
 .modal-link {
