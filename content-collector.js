@@ -162,7 +162,9 @@ function buildFallbackSourceMap(entries) {
 }
 
 async function applyFallbackToResult(result, fallbackSource, options = {}) {
-  if (!needsFallback(result) || !fallbackSource) {
+  const fallbackDecision = getFallbackDecision(result, fallbackSource);
+
+  if (!fallbackDecision.shouldApply || !fallbackSource) {
     return repairFacebookSourceMedia(result, options);
   }
 
@@ -178,20 +180,24 @@ async function applyFallbackToResult(result, fallbackSource, options = {}) {
     warnings: dedupeStrings([
       ...(fallback.warnings || []),
       ...(result.warnings || []),
-      `Reused last good snapshot from ${fallbackLabel} because the latest fetch returned no displayable posts.`
+      fallbackDecision.warning
     ]),
     diagnostics: {
       ...(fallback.diagnostics || {}),
       fallbackApplied: {
         from: fallbackLabel,
         at: new Date().toISOString(),
-        reason: result.error || `Current run returned ${result.posts?.length || 0} posts.`
+        reason: fallbackDecision.reason
       },
       latestAttempt: {
         status: result.status,
         error: result.error || null,
         warnings: result.warnings || [],
-        diagnostics: result.diagnostics || {}
+        diagnostics: result.diagnostics || {},
+        posts: getRenderablePostCount(result)
+      },
+      fallbackSnapshot: {
+        posts: getRenderablePostCount(fallback)
       }
     },
     fallbackApplied: true
@@ -210,6 +216,37 @@ function needsFallback(result) {
   }
 
   return !Array.isArray(result.posts) || result.posts.length === 0;
+}
+
+function getFallbackDecision(result, fallbackSource) {
+  if (!fallbackSource) {
+    return { shouldApply: false };
+  }
+
+  const currentCount = getRenderablePostCount(result);
+  const fallbackCount = getRenderablePostCount(fallbackSource);
+
+  if (needsFallback(result)) {
+    return {
+      shouldApply: true,
+      reason: result?.error || `Current run returned ${currentCount} posts.`,
+      warning: `Reused last good snapshot from ${fallbackSource.__fallbackLabel || "stored-fallback"} because the latest fetch returned no displayable posts.`
+    };
+  }
+
+  if (result?.status === "partial" && fallbackCount > currentCount) {
+    return {
+      shouldApply: true,
+      reason: `Current run returned ${currentCount} posts, which is fewer than the ${fallbackCount} posts in the previous live snapshot.`,
+      warning: `Reused last good snapshot from ${fallbackSource.__fallbackLabel || "stored-fallback"} because the latest fetch was partial and would have shrunk the board from ${fallbackCount} posts to ${currentCount}.`
+    };
+  }
+
+  return { shouldApply: false };
+}
+
+function getRenderablePostCount(result) {
+  return Array.isArray(result?.posts) ? result.posts.length : 0;
 }
 
 function hasRenderableSourceData(result) {

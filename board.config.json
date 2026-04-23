@@ -19,10 +19,11 @@
     "postTypes": [
       "reel"
     ],
-    "keywords": [],
-    "includeHashtags": [
+    "keywords": [
+      "親子5分鐘",
       "親子五分鐘"
     ],
+    "includeHashtags": [],
     "excludeHashtags": [],
     "dateFrom": "",
     "dateTo": ""
