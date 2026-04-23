@@ -355,7 +355,7 @@ function renderModal() {
     ? `<p class="card-source">${escapeHtml(formatSourceLabel(selectedCard))}</p>`
     : "";
   const originalLinkMarkup = config.interaction.enableExternalLinks && selectedCard.permalink
-    ? `<a class="modal-link" href="${escapeHtml(selectedCard.permalink)}" target="_blank" rel="noreferrer">Open original post</a>`
+    ? `<a class="modal-link" href="${escapeHtml(selectedCard.permalink)}" target="_blank" rel="noreferrer">連接到社交平台</a>`
     : "";
 
   modalRoot.innerHTML = `
@@ -366,8 +366,8 @@ function renderModal() {
         aria-modal="true"
         aria-labelledby="modal-title"
       >
-        <button class="modal-close" type="button" data-close-modal>Close</button>
-        <p class="eyebrow">Post preview</p>
+        <button class="modal-close" type="button" data-close-modal>關閉</button>
+        <p class="eyebrow">立即播放</p>
         ${modalMediaMarkup}
         ${metaMarkup}
         <h3 id="modal-title">${escapeHtml(selectedCard.title)}</h3>
